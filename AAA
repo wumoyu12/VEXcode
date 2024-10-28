@@ -1,0 +1,119 @@
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// Robot Configuration:
+// [Name]               [Type]        [Port(s)]
+// Controller1          controller                    
+// leftMotors           motor         1               
+// rightMotors          motor         2               
+// Optical              optical       3               
+// RollerSpinner        motor         4               
+// Intake               motor         5               
+// Launcher             motor         6               
+// ---- END VEXCODE CONFIGURED DEVICES ----
+
+
+
+//PLEASE READ ALL COMMENTS BEFORE USING THE CODE
+
+// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+//this code assumes that the roller is on the back of the robot, the intake and launcher is in the front, starts in the same spot, 
+//the bot has a basic car/tank like base, the battery percentage is roughly the same every time used (prefferably near 100%), and
+//the robot has a color senor near the roller turner
+
+#include "vex.h"
+#include "math.h"
+
+using namespace vex;
+
+competition Competition;
+
+motor_group FullDrive = motor_group(leftMotors, rightMotors);
+
+void Autonomous()
+{
+  //I will refer to the field as if it were a coordinate plane like once or twice
+  //the x wait timers after each stop is to allow the robot to settle, increase this if needed
+  double x = 0.1; //<-- this is in seconds
+
+  //this first forward movement is to get the robot a bit away from the wall
+  FullDrive.spin(forward, 100, percent);
+  wait(0.2, seconds);
+  FullDrive.stop(coast);
+  wait(x, seconds);
+  //meant to turn bot at 60 degree angle with north (relative to picture) being 0 degrees
+  leftMotors.spin(forward, 100, percent);
+  rightMotors.spin(reverse, 100, percent);
+  wait(0.4, seconds);
+  FullDrive.stop(hold);
+  wait(x, seconds);
+  //should have the center of the robot's x position match up with the roller's x position
+  FullDrive.spin(forward, 100, percent);
+  wait(0.85, seconds);
+  FullDrive.stop(hold);
+  wait(x, seconds);
+  //Turns robot -60 degrees to face back to 0 and have it's back (hopefully where your roller spinner is) match up with the roller
+  leftMotors.spin(reverse, 100, percent);
+  rightMotors.spin(forward, 100, percent);
+  wait(0.4, seconds);
+  FullDrive.stop(hold);
+  wait(x, seconds);
+  //drives robot into contact with the roller
+  FullDrive.spin(reverse, 100, percent);
+  wait(0.5, seconds);
+  FullDrive.stop();
+  //This part will prob cause the bot to slam into the roller so be ready for that
+  wait(x, seconds);
+  //this comparison assumes the hue of red is returned as 5 because I don't know and can't find nothing about it
+  //It is also overly complicated since IDK how to do a +/- comparison (I'm using a 5 margin of error for different shades)
+  while(int(Optical.hue()) < 10 || int(Optical.hue()) > 0 ){
+    RollerSpinner.spin(forward, 10, percent);
+  }
+  //^^ Will continue until the Optical sensor sees red ^^
+  //Moves robot away from roller
+  FullDrive.spin(forward, 100, percent);
+  wait(0.2, seconds);
+  FullDrive.stop(hold);
+  wait(x, seconds);
+  //Turns robot to face the 3 discs in a line
+  leftMotors.spin(reverse, 100, percent);
+  rightMotors.spin(forward, 100, percent);
+  wait(0.3, seconds);
+  FullDrive.stop(hold);
+  wait(x, seconds);
+  //turns on intake motor and drives robot forward to pick up discs
+  Intake.spin(forward, 100, percent);
+  FullDrive.spin(forward, 100, percent);
+  wait(1.75, seconds);
+  //stop robot on where the last disc in the line was
+  FullDrive.stop(hold);
+  wait(x, seconds);
+  //turns robot -90 degrees to face the goal
+  leftMotors.spin(reverse, 100, percent);
+  rightMotors.spin(forward, 100, percent);
+  wait(0.5, seconds);
+  FullDrive.stop(hold);
+  wait(x, seconds);
+  //allows the intake system time to bring any remaining discs where they need to go
+  wait(0.5, seconds);
+  Intake.stop(coast);
+  //Change the percent amount it spins for what makes it into the goal with your launcher
+  Launcher.spin(forward, 100, percent);
+  //Put code for putting disc into launcher wheel here (prob a pneumatic)
+
+  //at this point everything you need to do is done and you can just ride out the remaining time till user control starts
+
+}
+
+void UserControl(){
+  while(true){
+  //whatever you got for human control period
+  }
+}
+
+int main() {
+  // Initializing Robot Configuration. DO NOT REMOVE!
+  vexcodeInit();
+  Competition.drivercontrol(UserControl);
+  Competition.autonomous(Autonomous);
+}
